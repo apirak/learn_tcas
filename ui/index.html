@@ -117,8 +117,8 @@
 
   #exams { display: grid; grid-template-columns: minmax(260px, 1fr) minmax(0, 2.2fr); gap: 10px; margin-top: 16px; align-items: start; }
   .answer, .section { background: var(--tile); border: 1px solid var(--line); border-radius: var(--r-md); box-shadow: var(--shadow); padding: 20px; }
-  .label { font-size: var(--s2); line-height: 20px; font-weight: 600; margin: 0 0 12px; }
-  .label .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--signal); margin-right: 8px; vertical-align: 1px; }
+  .answer h2 { font-size: var(--s4); line-height: 28px; font-weight: 600; margin: 0; }
+  .answer .sub { margin: 8px 0 12px; font-size: var(--s1); line-height: 18px; color: var(--muted); }
   .must-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
   .must-list li { padding: 10px 14px; border-radius: var(--r-md); background: var(--signal-soft); color: var(--signal-ink);
     font-size: var(--s3); line-height: 22px; font-weight: 600; }
@@ -368,7 +368,9 @@ function renderExams() {
     : pct >= OFTEN ? '<span class="tag often">ส่วนใหญ่</span>' : '<span class="tag some">บางที่</span>';
 
   out.innerHTML = `<section class="answer">
-      <p class="label"><span class="dot" aria-hidden="true"></span>ต้องสอบ (ใช้ใน ≥${MUST}% ของ ${progs.length.toLocaleString()} หลักสูตร)</p>
+      <h2>วิชาที่ต้องสอบ</h2>
+      <p class="sub">${progs.length === 1 ? "ทุกวิชาที่หลักสูตรนี้ใช้คัดเลือก"
+        : `วิชาที่ใช้ใน ≥${MUST}% ของ ${progs.length.toLocaleString()} หลักสูตรที่เลือก`}</p>
       ${must.length
         ? `<ul class="must-list">${must.map(r => `<li>${name(r.s)}<span class="key">${esc(r.s)}</span></li>`).join("")}</ul>`
         : `<p class="must-none">ไม่มีวิชาที่เกือบทุกหลักสูตรใช้ — ดูตารางด้านล่าง หรือเลือกให้แคบลง</p>`}
