@@ -115,15 +115,8 @@
   .status .i { margin-top: 1px; color: var(--muted); }
   .status:has(#status:empty) { display: none; }
 
-  #exams { display: grid; grid-template-columns: minmax(260px, 1fr) minmax(0, 2.2fr); gap: 10px; margin-top: 16px; align-items: start; }
+  #exams { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; margin-top: 16px; align-items: start; }
   .answer, .section { background: var(--tile); border: 1px solid var(--line); border-radius: var(--r-md); box-shadow: var(--shadow); padding: 20px; }
-  .answer h2 { font-size: var(--s4); line-height: 28px; font-weight: 600; margin: 0; }
-  .answer .sub { margin: 8px 0 12px; font-size: var(--s1); line-height: 18px; color: var(--muted); }
-  .must-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
-  .must-list li { padding: 10px 14px; border-radius: var(--r-md); background: var(--signal-soft); color: var(--signal-ink);
-    font-size: var(--s3); line-height: 22px; font-weight: 600; }
-  .must-list li .key { color: inherit; opacity: .85; font-weight: 400; margin-left: 6px; }
-  .must-none { margin: 0; color: var(--muted); }
   .either { margin: 12px 0 0; padding: 10px 14px; border-radius: var(--r-md); border: 1px solid var(--line); font-size: var(--s2); line-height: 20px; }
 
   .section h2 { font-size: var(--s4); line-height: 28px; font-weight: 600; margin: 0; }
@@ -157,7 +150,6 @@
 
   @media (max-width: 1100px) {
     .browser { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    #exams { grid-template-columns: 1fr; }
   }
   @media (max-width: 640px) {
     :root { --gut: 12px; }
@@ -358,7 +350,6 @@ function renderExams() {
     return;
   }
   const name = s => esc(D.subjects[s] || s);
-  const must = rows.filter(r => r.pct >= MUST);
   const range = ws => {
     if (!ws.length) return '<span class="key">ขั้นต่ำเท่านั้น</span>';
     const lo = Math.min(...ws), hi = Math.max(...ws);
@@ -367,16 +358,7 @@ function renderExams() {
   const tag = pct => pct >= MUST ? '<span class="tag must">ต้องสอบ</span>'
     : pct >= OFTEN ? '<span class="tag often">ส่วนใหญ่</span>' : '<span class="tag some">บางที่</span>';
 
-  out.innerHTML = `<section class="answer">
-      <h2>วิชาที่ต้องสอบ</h2>
-      <p class="sub">${progs.length === 1 ? "ทุกวิชาที่หลักสูตรนี้ใช้คัดเลือก"
-        : `วิชาที่ใช้ใน ≥${MUST}% ของ ${progs.length.toLocaleString()} หลักสูตรที่เลือก`}</p>
-      ${must.length
-        ? `<ul class="must-list">${must.map(r => `<li>${name(r.s)}<span class="key">${esc(r.s)}</span></li>`).join("")}</ul>`
-        : `<p class="must-none">ไม่มีวิชาที่เกือบทุกหลักสูตรใช้ — ดูตารางด้านล่าง หรือเลือกให้แคบลง</p>`}
-      ${eitherLines.map(t => `<p class="either">${esc(t)}</p>`).join("")}
-    </section>
-    <section class="section">
+  out.innerHTML = `<section class="section">
       <h2>วิชาที่ใช้ทั้งหมด</h2>
       <ul class="legend">
         <li><span class="tag must">ต้องสอบ</span> ≥${MUST}% ของหลักสูตร</li>
@@ -394,6 +376,7 @@ function renderExams() {
           <td class="num">${range(r.ws)}</td>
         </tr>`).join("")}</tbody>
       </table>
+      ${eitherLines.map(t => `<p class="either">${esc(t)}</p>`).join("")}
       <ul class="notes">${notes}</ul>
       ${link}
     </section>`;
