@@ -4,6 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>TCAS Browser</title>
+<link rel="icon" href="icon.png">
+<link rel="apple-touch-icon" href="icon.png">
 <script>
   // ตั้งธีมก่อน render ครั้งแรก กันจอกระพริบ
   try { const t = localStorage.getItem("theme"); if (t === "light" || t === "dark") document.documentElement.dataset.theme = t; } catch {}
@@ -49,8 +51,7 @@
   .top { display: flex; align-items: center; justify-content: space-between; gap: 16px;
     height: 60px; padding: 0 var(--gut); background: var(--tile); border-bottom: 1px solid var(--line); }
   .brand { display: flex; align-items: center; gap: 10px; font-size: var(--s3); font-weight: 600; margin: 0; }
-  .brand::before { content: "T"; display: grid; place-items: center; width: 32px; height: 32px; border-radius: var(--r-sm);
-    background: var(--primary); color: var(--primary-text); font-weight: 700; }
+  .brand::before { content: ""; flex: none; width: 32px; height: 32px; border-radius: var(--r-sm); background: url(icon.png) center / cover; }
   .brand span { font-size: var(--s1); font-weight: 400; color: var(--muted); }
   .tools { display: flex; align-items: center; gap: 12px; white-space: nowrap; }
   .theme { display: flex; gap: 2px; padding: 3px; background: var(--card); border: 1px solid var(--line); border-radius: 999px; }
@@ -155,7 +156,6 @@
     :root { --gut: 12px; }
     .top .brand { font-size: 0; gap: 0; }
     .top .brand span { display: none; }
-    .top .brand::before { font-size: var(--s3); }
     .tools { gap: 8px; }
     .theme button { padding-inline: 8px; }
     .theme button span { display: none; }

@@ -29,7 +29,7 @@ jobs:
         # คงโครงสร้าง ui/ + data/ ไว้ เพราะหน้าโหลด ../data/browse.json
         run: |
           mkdir -p _site/ui _site/data
-          cp ui/index.html _site/ui/
+          cp ui/index.html ui/icon.png _site/ui/
           cp data/browse.json _site/data/
           echo '<meta http-equiv="refresh" content="0; url=ui/">' > _site/index.html
       - uses: actions/configure-pages@v5
