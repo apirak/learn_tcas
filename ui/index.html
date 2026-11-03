@@ -123,6 +123,22 @@
   .section h2 { font-size: var(--s4); line-height: 28px; font-weight: 600; margin: 0; }
   .section .head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; margin-bottom: 12px; }
   .head .legend { margin-bottom: 0; }
+  /* ปุ่มคัดลอก: บอกผลด้วยป้ายลอยเหนือปุ่ม ไม่ดันเนื้อหาให้ขยับ */
+  .copybtn { position: relative; }
+  .copybtn .ico { display: grid; }
+  .copybtn .ico .i { grid-area: 1 / 1; transition: opacity .2s; }
+  .copybtn .ico .ok, .copybtn.copied .ico .cp { opacity: 0; }
+  .copybtn.copied .ico .ok { opacity: 1; }
+  .copybtn .float { position: absolute; left: 50%; bottom: 100%; padding: 2px 10px; border-radius: 999px; background: var(--primary);
+    color: var(--primary-text); white-space: nowrap; pointer-events: none; opacity: 0; transform: translate(-50%, 4px); }
+  .copybtn.done { animation: nudge .3s ease; }
+  .copybtn.done .float { animation: float-up 1.4s ease forwards; }
+  @keyframes float-up { 15% { opacity: 1; transform: translate(-50%, -6px); } 75% { opacity: 1; transform: translate(-50%, -10px); } to { opacity: 0; transform: translate(-50%, -16px); } }
+  @keyframes nudge { 40% { transform: scale(.94); } }
+  @media (prefers-reduced-motion: reduce) {
+    .copybtn.done, .copybtn.done .float { animation: none; }
+    .copybtn.done .float { opacity: 1; transform: translate(-50%, -8px); }
+  }
   .legend { display: flex; flex-wrap: wrap; gap: 6px 16px; margin: 8px 0 12px; padding: 0; list-style: none; font-size: var(--s1); line-height: 18px; color: var(--muted); }
   .legend li { display: flex; align-items: center; gap: 6px; }
   table { width: 100%; border-collapse: collapse; }
@@ -179,6 +195,7 @@
   <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></symbol>
   <symbol id="i-moon" viewBox="0 0 24 24"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></symbol>
   <symbol id="i-external-link" viewBox="0 0 24 24"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
   <symbol id="i-copy" viewBox="0 0 24 24"><rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></symbol>
   <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></symbol>
 </svg>
@@ -381,7 +398,7 @@ function renderExams() {
           <li><span class="tag some">บางที่</span> ต่ำกว่า ${OFTEN}%</li>
           <li>น้ำหนัก = สัดส่วนคะแนนวิชานั้นในการคัดเลือก</li>
         </ul>
-      </div>${plan ? `<button class="textbtn" type="button" id="copy-plan" title="วางในโปรแกรม learn_planing"><svg class="i" aria-hidden="true"><use href="#i-copy"/></svg><span>คัดลอกไปวางแผน</span></button>` : ""}</div>
+      </div>${plan ? `<button class="textbtn copybtn" type="button" id="copy-plan" title="วางในโปรแกรม learn_planing"><span class="ico" aria-hidden="true"><svg class="i cp"><use href="#i-copy"/></svg><svg class="i ok"><use href="#i-check"/></svg></span>คัดลอกไปวางแผน<span class="float" role="status"></span></button>` : ""}</div>
       <table>
         <thead><tr><th>วิชา</th><th class="num">หลักสูตร</th><th>โอกาส</th><th class="num">น้ำหนัก</th></tr></thead>
         <tbody>${rows.map(r => `<tr>
@@ -420,11 +437,15 @@ const status = msg => document.getElementById("status").textContent = msg;
 document.addEventListener("click", e => {
   const c = e.target.closest("#copy-plan");
   if (c) {
-    navigator.clipboard.writeText(JSON.stringify(plan, null, 2)).then(() => {
-      c.lastChild.textContent = "คัดลอกแล้ว ✓";
-      status("คัดลอกข้อมูลแล้ว นำไปวางในโปรแกรม learn_planing ได้เลย");
-      setTimeout(() => c.lastChild.textContent = "คัดลอกไปวางแผน", 2000);
-    }, () => status("คัดลอกไม่สำเร็จ — เบราว์เซอร์ไม่อนุญาตให้เข้าถึงคลิปบอร์ด"));
+    const show = ok => {
+      c.classList.remove("done"); void c.offsetWidth; // เริ่มแอนิเมชันใหม่เมื่อกดซ้ำ
+      c.classList.add("done");
+      c.classList.toggle("copied", ok);
+      c.lastChild.textContent = ok ? "คัดลอกแล้ว" : "คัดลอกไม่ได้";
+      clearTimeout(c.t);
+      c.t = setTimeout(() => { c.classList.remove("done", "copied"); c.lastChild.textContent = ""; }, 1600);
+    };
+    navigator.clipboard.writeText(JSON.stringify(plan, null, 2)).then(() => show(true), () => show(false));
     return;
   }
   const x = e.target.closest(".clear");
