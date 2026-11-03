@@ -121,6 +121,8 @@
   .either { margin: 12px 0 0; padding: 10px 14px; border-radius: var(--r-md); border: 1px solid var(--line); font-size: var(--s2); line-height: 20px; }
 
   .section h2 { font-size: var(--s4); line-height: 28px; font-weight: 600; margin: 0; }
+  .section .head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; margin-bottom: 12px; }
+  .head .legend { margin-bottom: 0; }
   .legend { display: flex; flex-wrap: wrap; gap: 6px 16px; margin: 8px 0 12px; padding: 0; list-style: none; font-size: var(--s1); line-height: 18px; color: var(--muted); }
   .legend li { display: flex; align-items: center; gap: 6px; }
   table { width: 100%; border-collapse: collapse; }
@@ -177,6 +179,7 @@
   <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></symbol>
   <symbol id="i-moon" viewBox="0 0 24 24"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></symbol>
   <symbol id="i-external-link" viewBox="0 0 24 24"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24"><rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></symbol>
   <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></symbol>
 </svg>
 <header class="top">
@@ -273,7 +276,8 @@ function renderList(key) {
     (q && !items.length ? `<p class="nomatch">ไม่พบ “${esc(query[key])}”</p>` : "");
 }
 
-const MUST = 95, OFTEN = 50;
+const MUST = 95, OFTEN = 50, PLAN_MAX = 20;
+let plan = null; // JSON ที่ปุ่ม "คัดลอกไปวางแผน" ส่งให้ learn_planing
 const ROUND = { 1: "รอบ 1 (Portfolio)", 2: "รอบ 2 (Quota)", 3: "รอบ 3 (Admission)" };
 const ENGLISH = new Set(["ielts", "toefl_ibt", "toefl_itp", "toefl_cbt", "toefl_pbt", "toeic", "cutep", "cutep_spk", "kept", "kuept", "cefr",
   "tuget", "cmuetegs", "mu_elt", "kmitl_tep", "psutep", "swu_set", "det"]);
@@ -300,14 +304,17 @@ function renderExams() {
   document.getElementById("summary").textContent =
     `${progs.length.toLocaleString()} หลักสูตร · ${unis.toLocaleString()} มหาวิทยาลัย`;
 
-  const stat = {}, reasons = {}, either = {};
+  const stat = {}, reasons = {}, either = {}, eitherKeys = {};
   for (const p of progs) {
     const ex = Object.entries(p.exams);
     if (!ex.length) {
       const why = Object.keys(p.others).length ? "ใช้เกรด / portfolio / สัมภาษณ์ แทนคะแนนสอบ" : noExamReason(p);
       reasons[why] = (reasons[why] || 0) + 1;
     }
-    for (const g of p.either) either[eitherText(g)] = (either[eitherText(g)] || 0) + 1;
+    for (const g of p.either) {
+      either[eitherText(g)] = (either[eitherText(g)] || 0) + 1;
+      eitherKeys[JSON.stringify(g)] = g;
+    }
     for (const [s, w] of ex) {
       const st = stat[s] ||= { n: 0, ws: [] };
       st.n++;
@@ -316,6 +323,13 @@ function renderExams() {
   }
   const rows = Object.entries(stat).sort((a, b) => b[1].n - a[1].n || th(a[0], b[0]))
     .map(([s, st]) => ({ s, ...st, pct: st.n / progs.length * 100 }));
+  plan = rows.length && rows.length <= PLAN_MAX ? {
+    source: "learn_tcas", version: 1,
+    selection: Object.fromEntries(KEYS.map(k => [k, sel[k]])),
+    programs: progs.length,
+    subjects: rows.map(r => r.s),
+    either: Object.values(eitherKeys),
+  } : null;
   const out = document.getElementById("exams");
   const link = progs.length === 1
     ? `<p class="ext">ดูเงื่อนไขเต็มของหลักสูตรนี้ที่ <a href="https://course.mytcas.com/programs/${progs[0].id}" target="_blank" rel="noopener">course.mytcas.com<svg class="i" aria-hidden="true"><use href="#i-external-link"/></svg></a></p>` : "";
@@ -359,13 +373,15 @@ function renderExams() {
     : pct >= OFTEN ? '<span class="tag often">ส่วนใหญ่</span>' : '<span class="tag some">บางที่</span>';
 
   out.innerHTML = `<section class="section">
-      <h2>วิชาที่ใช้ทั้งหมด</h2>
-      <ul class="legend">
-        <li><span class="tag must">ต้องสอบ</span> ≥${MUST}% ของหลักสูตร</li>
-        <li><span class="tag often">ส่วนใหญ่</span> ${OFTEN}–${MUST - 1}%</li>
-        <li><span class="tag some">บางที่</span> ต่ำกว่า ${OFTEN}%</li>
-        <li>น้ำหนัก = สัดส่วนคะแนนวิชานั้นในการคัดเลือก</li>
-      </ul>
+      <div class="head"><div>
+        <h2>วิชาที่ใช้ทั้งหมด</h2>
+        <ul class="legend">
+          <li><span class="tag must">ต้องสอบ</span> ≥${MUST}% ของหลักสูตร</li>
+          <li><span class="tag often">ส่วนใหญ่</span> ${OFTEN}–${MUST - 1}%</li>
+          <li><span class="tag some">บางที่</span> ต่ำกว่า ${OFTEN}%</li>
+          <li>น้ำหนัก = สัดส่วนคะแนนวิชานั้นในการคัดเลือก</li>
+        </ul>
+      </div>${plan ? `<button class="textbtn" type="button" id="copy-plan" title="วางในโปรแกรม learn_planing"><svg class="i" aria-hidden="true"><use href="#i-copy"/></svg><span>คัดลอกไปวางแผน</span></button>` : ""}</div>
       <table>
         <thead><tr><th>วิชา</th><th class="num">หลักสูตร</th><th>โอกาส</th><th class="num">น้ำหนัก</th></tr></thead>
         <tbody>${rows.map(r => `<tr>
@@ -402,6 +418,15 @@ function esc(s) {
 const status = msg => document.getElementById("status").textContent = msg;
 
 document.addEventListener("click", e => {
+  const c = e.target.closest("#copy-plan");
+  if (c) {
+    navigator.clipboard.writeText(JSON.stringify(plan, null, 2)).then(() => {
+      c.lastChild.textContent = "คัดลอกแล้ว ✓";
+      status("คัดลอกข้อมูลแล้ว นำไปวางในโปรแกรม learn_planing ได้เลย");
+      setTimeout(() => c.lastChild.textContent = "คัดลอกไปวางแผน", 2000);
+    }, () => status("คัดลอกไม่สำเร็จ — เบราว์เซอร์ไม่อนุญาตให้เข้าถึงคลิปบอร์ด"));
+    return;
+  }
   const x = e.target.closest(".clear");
   if (x) {
     const input = document.getElementById(`q-${x.dataset.key}`);
