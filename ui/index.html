@@ -67,7 +67,7 @@
   .col { display: flex; flex-direction: column; min-width: 0; min-height: 0; background: var(--tile);
     border: 1px solid var(--line); border-radius: var(--r-md); box-shadow: var(--shadow); overflow: hidden; }
   .col-head { padding: 6px 6px 4px; }
-  /* ช่องค้นหาเป็นหัวคอลัมน์ด้วย: ว่าง = "ค้นหา ชื่อคอลัมน์ (จำนวน) 🔍", พิมพ์แล้ว = คำค้น (เจอ/ทั้งหมด) x
+  /* ช่องค้นหาเป็นหัวคอลัมน์ด้วย: ว่าง = "ชื่อคอลัมน์ (จำนวน) 🔍", พิมพ์แล้ว = คำค้น (เจอ/ทั้งหมด) x
      สูงและเยื้องเท่า .item ข้อความจึงตรงกับรายการด้านล่าง */
   .search-box { position: relative; }
   .search { width: 100%; height: 35px; padding: 0 36px 0 7px; border: 1px solid transparent; border-radius: var(--r-sm);
@@ -267,7 +267,7 @@ function buildColumns() {
   document.querySelectorAll(".col").forEach((col, i) => {
     const k = KEYS[i];
     col.innerHTML = `<div class="col-head">
-        <div class="search-box"><input class="search" type="search" id="q-${k}" data-key="${k}" placeholder=" " aria-label="ค้นหา${TITLE[k]}" autocomplete="off" spellcheck="false"><span class="ph" aria-hidden="true">ค้นหา <b>${TITLE[k]}</b><span class="n" id="n-${k}"></span></span><span class="tail"><span class="n" id="c-${k}" aria-live="polite"></span><button class="clear" type="button" data-key="${k}" aria-label="ล้างคำค้น${TITLE[k]}"><svg class="i" aria-hidden="true"><use href="#i-x"/></svg></button><svg class="i" aria-hidden="true"><use href="#i-search"/></svg></span></div>
+        <div class="search-box"><input class="search" type="search" id="q-${k}" data-key="${k}" placeholder=" " aria-label="ค้นหา${TITLE[k]}" autocomplete="off" spellcheck="false"><span class="ph" aria-hidden="true"><b>${TITLE[k]}</b><span class="n" id="n-${k}"></span></span><span class="tail"><span class="n" id="c-${k}" aria-live="polite"></span><button class="clear" type="button" data-key="${k}" aria-label="ล้างคำค้น${TITLE[k]}"><svg class="i" aria-hidden="true"><use href="#i-x"/></svg></button><svg class="i" aria-hidden="true"><use href="#i-search"/></svg></span></div>
       </div>
       <div class="list" id="${k}" role="group" aria-label="${TITLE[k]}"></div>`;
   });
