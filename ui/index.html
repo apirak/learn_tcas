@@ -62,7 +62,7 @@
 
   /* ── คอลัมน์เลือกด้านบน, คำตอบด้านล่าง ── */
   .app { padding: var(--gut); display: grid; gap: var(--gut); }
-  .browser { display: grid; grid-template-columns: 1.1fr 1fr 1.1fr 1.5fr; gap: 10px; padding: 10px;
+  .browser { display: grid; grid-template-columns: 1.1fr .9fr 1.1fr 1fr 1.1fr 1.5fr; gap: 10px; padding: 10px;
     background: var(--card); border: 1px solid var(--line); border-radius: var(--r-lg); }
   .col { display: flex; flex-direction: column; min-width: 0; min-height: 0; background: var(--tile);
     border: 1px solid var(--line); border-radius: var(--r-md); box-shadow: var(--shadow); overflow: hidden; }
@@ -167,7 +167,10 @@
   a .i { width: 14px; height: 14px; margin-left: 4px; vertical-align: -2px; }
   .ext { margin: 16px 0 0; }
 
-  @media (max-width: 1100px) {
+  @media (max-width: 1400px) {
+    .browser { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  }
+  @media (max-width: 900px) {
     .browser { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   }
   @media (max-width: 640px) {
@@ -212,6 +215,8 @@
 <div class="app">
   <div class="browser">
     <section class="col" aria-labelledby="h-uni"></section>
+    <section class="col" aria-labelledby="h-campus"></section>
+    <section class="col" aria-labelledby="h-faculty"></section>
     <section class="col" aria-labelledby="h-group"></section>
     <section class="col" aria-labelledby="h-field"></section>
     <section class="col" aria-labelledby="h-name"></section>
@@ -226,11 +231,12 @@
 </div>
 
 <script>
-// คอลัมน์ มหาวิทยาลัย | คณะ | สาขา | หลักสูตร (ชื่อ, รวมข้ามมหาวิทยาลัย) — กรองกันได้ทุกทิศ เลือกคอลัมน์ไหนก่อนก็ได้
-const KEYS = ["uni", "group", "field", "name"];
-const TITLE = { uni: "มหาวิทยาลัย", group: "คณะ (กลุ่มสาขา)", field: "สาขา", name: "หลักสูตร" };
-const sel = { group: null, field: null, name: null, uni: null };
-const query = { group: "", field: "", name: "", uni: "" };
+// คอลัมน์ มหาวิทยาลัย | วิทยาเขต | คณะ | กลุ่มสาขา | สาขา | หลักสูตร (ชื่อ, รวมข้ามมหาวิทยาลัย) — กรองกันได้ทุกทิศ เลือกคอลัมน์ไหนก่อนก็ได้
+// วิทยาเขต/คณะ กรองด้วยชื่อ จึงรวมข้ามมหาวิทยาลัย เช่น "คณะวิศวกรรมศาสตร์" ทุกที่
+const KEYS = ["uni", "campus", "faculty", "group", "field", "name"];
+const TITLE = { uni: "มหาวิทยาลัย", campus: "วิทยาเขต", faculty: "คณะ", group: "กลุ่มสาขา", field: "สาขา", name: "หลักสูตร" };
+const sel = Object.fromEntries(KEYS.map(k => [k, null]));
+const query = Object.fromEntries(KEYS.map(k => [k, ""]));
 let D, fetchedAt;
 
 const th = (a, b) => a.localeCompare(b, "th");
@@ -239,9 +245,11 @@ const label = {
   field: id => D.fields[id],
   name: id => id,
   uni: id => D.universities[id] || id,
+  campus: id => id,
+  faculty: id => id,
 };
 
-// คณะ ⊃ สาขา ⊃ หลักสูตร: คอลัมน์แม่ไม่ถูกกรองด้วยลูก ไม่งั้นเลือกสาขาแล้วจะเปลี่ยนไปคณะอื่นไม่ได้
+// กลุ่มสาขา ⊃ สาขา ⊃ หลักสูตร: คอลัมน์แม่ไม่ถูกกรองด้วยลูก ไม่งั้นเลือกสาขาแล้วจะเปลี่ยนไปกลุ่มอื่นไม่ได้
 const BELOW = { group: ["field", "name"], field: ["name"] };
 
 // หลักสูตรที่ผ่านทุกตัวกรอง ยกเว้นของคอลัมน์ `except` และคอลัมน์ลูกของมัน (ไม่ใส่ = ทุกตัวกรอง)
