@@ -62,8 +62,11 @@
 
   /* ── คอลัมน์เลือกด้านบน, คำตอบด้านล่าง ── */
   .app { padding: var(--gut); display: grid; gap: var(--gut); }
-  .browser { display: grid; grid-template-columns: 1.1fr .9fr 1.1fr 1fr 1.1fr 1.5fr; gap: 10px; padding: 10px;
+  .browser { display: grid; grid-template-columns: 1.1fr 1fr 1.1fr 1.5fr; gap: 10px; padding: 10px;
     background: var(--card); border: 1px solid var(--line); border-radius: var(--r-lg); }
+  .browser.extra { grid-template-columns: 1.1fr .9fr 1.1fr 1fr 1.1fr 1.5fr; }
+  .browser:not(.extra) .col.x { display: none; }
+  #extra[aria-pressed="true"] { background: var(--sel); font-weight: 600; }
   .col { display: flex; flex-direction: column; min-width: 0; min-height: 0; background: var(--tile);
     border: 1px solid var(--line); border-radius: var(--r-md); box-shadow: var(--shadow); overflow: hidden; }
   .col-head { padding: 6px 6px 4px; }
@@ -168,10 +171,10 @@
   .ext { margin: 16px 0 0; }
 
   @media (max-width: 1400px) {
-    .browser { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .browser.extra { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   }
-  @media (max-width: 900px) {
-    .browser { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  @media (max-width: 1100px) {
+    .browser, .browser.extra { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   }
   @media (max-width: 640px) {
     :root { --gut: 12px; }
@@ -181,7 +184,7 @@
     .theme button { padding-inline: 8px; }
     .theme button span { display: none; }
     .result h1 { font-size: var(--s4); line-height: 28px; }
-    .browser { grid-template-columns: 1fr; padding: 6px; }
+    .browser, .browser.extra { grid-template-columns: 1fr; padding: 6px; }
     .result { padding: 12px 6px 6px; }
     .item { padding-block: 10px; }
     .list { height: 190px; }
@@ -205,6 +208,7 @@
 <header class="top">
   <p class="brand">TCAS Browser<span id="fetched"></span></p>
   <div class="tools">
+    <button class="textbtn" id="extra" type="button" aria-pressed="false">วิทยาเขต · คณะ</button>
     <button class="textbtn" id="reset" disabled><svg class="i" aria-hidden="true"><use href="#i-x"/></svg>ล้างตัวเลือกทั้งหมด</button>
     <div class="theme" role="group" aria-label="ธีม">
       <button type="button" data-theme="system" aria-label="ตามระบบ"><svg class="i" aria-hidden="true"><use href="#i-monitor"/></svg><span>ตามระบบ</span></button><button type="button" data-theme="light" aria-label="สว่าง"><svg class="i" aria-hidden="true"><use href="#i-sun"/></svg><span>สว่าง</span></button><button type="button" data-theme="dark" aria-label="มืด"><svg class="i" aria-hidden="true"><use href="#i-moon"/></svg><span>มืด</span></button>
@@ -215,8 +219,8 @@
 <div class="app">
   <div class="browser">
     <section class="col" aria-labelledby="h-uni"></section>
-    <section class="col" aria-labelledby="h-campus"></section>
-    <section class="col" aria-labelledby="h-faculty"></section>
+    <section class="col x" aria-labelledby="h-campus"></section>
+    <section class="col x" aria-labelledby="h-faculty"></section>
     <section class="col" aria-labelledby="h-group"></section>
     <section class="col" aria-labelledby="h-field"></section>
     <section class="col" aria-labelledby="h-name"></section>
@@ -233,10 +237,12 @@
 <script>
 // คอลัมน์ มหาวิทยาลัย | วิทยาเขต | คณะ | กลุ่มสาขา | สาขา | หลักสูตร (ชื่อ, รวมข้ามมหาวิทยาลัย) — กรองกันได้ทุกทิศ เลือกคอลัมน์ไหนก่อนก็ได้
 // วิทยาเขต/คณะ กรองด้วยชื่อ จึงรวมข้ามมหาวิทยาลัย เช่น "คณะวิศวกรรมศาสตร์" ทุกที่
-const KEYS = ["uni", "campus", "faculty", "group", "field", "name"];
+const ALL = ["uni", "campus", "faculty", "group", "field", "name"];
+const EXTRA = ["campus", "faculty"]; // ซ่อน/แสดงได้จากปุ่มด้านบน
+let KEYS = ALL; // คอลัมน์ที่แสดงอยู่
 const TITLE = { uni: "มหาวิทยาลัย", campus: "วิทยาเขต", faculty: "คณะ", group: "กลุ่มสาขา", field: "สาขา", name: "หลักสูตร" };
-const sel = Object.fromEntries(KEYS.map(k => [k, null]));
-const query = Object.fromEntries(KEYS.map(k => [k, ""]));
+const sel = Object.fromEntries(ALL.map(k => [k, null]));
+const query = Object.fromEntries(ALL.map(k => [k, ""]));
 let D, fetchedAt;
 
 const th = (a, b) => a.localeCompare(b, "th");
@@ -273,7 +279,7 @@ function select(key, id) {
 
 function buildColumns() {
   document.querySelectorAll(".col").forEach((col, i) => {
-    const k = KEYS[i];
+    const k = ALL[i];
     col.innerHTML = `<div class="col-head">
         <div class="search-box"><input class="search" type="search" id="q-${k}" data-key="${k}" placeholder=" " aria-label="ค้นหา${TITLE[k]}" autocomplete="off" spellcheck="false"><span class="ph" aria-hidden="true"><b>${TITLE[k]}</b><span class="n" id="n-${k}"></span></span><span class="tail"><span class="n" id="c-${k}" aria-live="polite"></span><button class="clear" type="button" data-key="${k}" aria-label="ล้างคำค้น${TITLE[k]}"><svg class="i" aria-hidden="true"><use href="#i-x"/></svg></button><svg class="i" aria-hidden="true"><use href="#i-search"/></svg></span></div>
       </div>
@@ -350,7 +356,7 @@ function renderExams() {
     .map(([s, st]) => ({ s, ...st, pct: st.n / progs.length * 100 }));
   plan = rows.length && rows.length <= PLAN_MAX ? {
     source: "learn_tcas", version: 1,
-    selection: Object.fromEntries(KEYS.map(k => [k, sel[k]])),
+    selection: Object.fromEntries(ALL.map(k => [k, sel[k]])),
     programs: progs.length,
     subjects: rows.map(r => r.s),
     either: Object.values(eitherKeys),
@@ -524,7 +530,22 @@ function setTheme(t, save) {
 themeBtns.forEach(b => b.addEventListener("click", () => setTheme(b.dataset.theme, true)));
 setTheme(document.documentElement.dataset.theme || "system");
 
+// คอลัมน์วิทยาเขต/คณะ: ซ่อนไว้ก่อน — ซ่อนแล้วล้างตัวเลือกของคอลัมน์นั้น จะได้ไม่มีตัวกรองที่มองไม่เห็น
+const extraBtn = document.getElementById("extra");
+function setExtra(on, save) {
+  KEYS = on ? ALL : ALL.filter(k => !EXTRA.includes(k));
+  document.querySelector(".browser").classList.toggle("extra", on);
+  extraBtn.setAttribute("aria-pressed", on);
+  if (!on) EXTRA.forEach(k => { sel[k] = null; query[k] = ""; document.getElementById(`q-${k}`).value = ""; });
+  if (save) try { on ? localStorage.setItem("extra", "1") : localStorage.removeItem("extra"); } catch {}
+  if (D) render();
+}
+extraBtn.addEventListener("click", () => setExtra(extraBtn.getAttribute("aria-pressed") !== "true", true));
+
 buildColumns();
+let savedExtra = false;
+try { savedExtra = localStorage.getItem("extra") === "1"; } catch {}
+setExtra(savedExtra);
 fetch("../data/browse.json").then(r => r.json()).then(j => {
   D = j.data;
   fetchedAt = j.fetched_at.slice(0, 10);
