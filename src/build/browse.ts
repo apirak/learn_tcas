@@ -88,11 +88,14 @@ export function buildBrowse(
   scoreKeys: ScoreKey[],
   universities: University[],
   admissionRounds: AdmissionRound[],
+  lastYear: ProgramExam[] = [], // รอบ 3 ปีก่อน ที่ใช้เติม (lastYearFill)
 ): Browse {
   const keyMap = new Map(scoreKeys.map(k => [k.key, k]));
-  const weights = examWeightsByProgram(programExams, keyMap);
-  const others = otherWeightsByProgram(programExams, keyMap);
-  const either = eitherByProgram(programExams, keyMap);
+  const all = [...programExams, ...lastYear];
+  const weights = examWeightsByProgram(all, keyMap);
+  const others = otherWeightsByProgram(all, keyMap);
+  const either = eitherByProgram(all, keyMap);
+  const filled = new Set(lastYear.map(e => e.program_id));
   const rounds = roundsByProgram(admissionRounds, programExams);
   const fieldId = (p: Program) => `${p.group_field_id}-${p.field_id}`;
 
@@ -106,11 +109,14 @@ export function buildBrowse(
       uni: p.university_id,
       group: p.group_field_id,
       field: fieldId(p),
+      campus: p.campus_name_th,
+      faculty: p.faculty_name_th,
       exams: weights.get(p.program_id) ?? {},
       others: others.get(p.program_id) ?? {},
       either: either.get(p.program_id) ?? [],
       rounds: rounds.open(p.program_id),
       scored: rounds.scored(p.program_id),
+      ...(filled.has(p.program_id) && { ly: true as const }),
     });
   }
   const eitherKeys = [...new Set([...rows.values()].flatMap(r => r.either.flat()))].sort();

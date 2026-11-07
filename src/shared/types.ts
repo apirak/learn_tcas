@@ -10,6 +10,8 @@ export type Program = {
   group_field_th: string;
   field_id: string;
   field_name_th: string;
+  campus_name_th: string;
+  faculty_name_th: string;
   [field: string]: unknown;
 };
 
@@ -123,6 +125,10 @@ export type BrowseProgram = {
   uni: string;
   group: string;
   field: string;
+  /** วิทยาเขต (campus_name_th) */
+  campus: string;
+  /** คณะ (faculty_name_th) */
+  faculty: string;
   /** วิชา → น้ำหนัก % สูงสุดในทุกรอบ (0 = ใช้แค่คะแนนขั้นต่ำ) */
   exams: Record<string, number>;
   /** เกณฑ์ที่ไม่ใช่การสอบ (gpax, portfolio, interview, …) → น้ำหนัก % สูงสุดในทุกรอบ */
@@ -133,4 +139,6 @@ export type BrowseProgram = {
   rounds: number[];
   /** รอบที่ประกาศสัดส่วนคะแนนแล้ว */
   scored: number[];
+  /** รอบ 3 ใช้สัดส่วนคะแนนของปีก่อน เพราะปีนี้ยังไม่ประกาศ */
+  ly?: true;
 };

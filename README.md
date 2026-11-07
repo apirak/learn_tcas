@@ -106,8 +106,11 @@ data.groups        { "30": "วิศวกรรมศาสตร์" }       
 data.fields        { "30-05": "วิศวกรรมคอมพิวเตอร์" }       key = group-field (ชื่อซ้ำข้ามกลุ่มได้)
 data.universities  { "001": "จุฬาลงกรณ์มหาวิทยาลัย" }
 data.subjects      { "tgat1": "การสื่อสารภาษาอังกฤษ (TGAT1)" } เฉพาะวิชาที่มีหลักสูตรใช้
-data.programs      [{ id, name, type, uni, group, field, exams: { subject: weight } }]  1 แถวต่อ program_id
+data.programs      [{ id, name, type, uni, group, field, campus, faculty, exams: { subject: weight } }]  1 แถวต่อ program_id
+                   campus = campus_name_th, faculty = faculty_name_th จาก programs.json (แถวแรกของ program_id)
 ```
+
+เติมจากปีก่อน: `data_import/cal_TargetSetting_Program_Result.json` (รอบ 3 TCAS69 ได้จากทีม ไม่อยู่ใน git เพราะมีคะแนนพยากรณ์ภายใน) — หลักสูตรที่รอบ 3 ปีนี้ยังไม่ประกาศสัดส่วนคะแนน ใช้สัดส่วนรอบ 3 ของปีก่อนแทน และมี `ly: true` · ใช้แค่ `scores`/`score_conditions` ไม่เอา `fc_*`/`tcas69_*` ขึ้น browse.json · ไม่มีไฟล์ = ไม่เติม
 
 ความหมายของ `exams` (รวมทุกรอบรับ ยังไม่มีรอบ 4):
 

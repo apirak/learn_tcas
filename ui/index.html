@@ -352,9 +352,11 @@ function renderExams() {
     ? `<p class="ext">ดูเงื่อนไขเต็มของหลักสูตรนี้ที่ <a href="https://course.mytcas.com/programs/${progs[0].id}" target="_blank" rel="noopener">course.mytcas.com<svg class="i" aria-hidden="true"><use href="#i-external-link"/></svg></a></p>` : "";
   const counted = obj => Object.entries(obj).sort((a, b) => b[1] - a[1]);
   const eitherCount = progs.filter(p => p.either.length).length;
+  const lyCount = progs.filter(p => p.ly).length;
   const notes = [
     "นับวิชาที่อยู่ในสัดส่วนคะแนน หรือใช้เป็นคะแนนขั้นต่ำ ของรอบใดรอบหนึ่ง",
     "ยังไม่มีข้อมูลรอบ 4",
+    lyCount ? `${progs.length > 1 ? `${lyCount.toLocaleString()} หลักสูตร` : "หลักสูตรนี้"}ใช้สัดส่วนคะแนนรอบ 3 ของปีก่อน เพราะปีนี้ยังไม่ประกาศ` : "",
     ...counted(reasons).map(([why, n]) => `${n.toLocaleString()} หลักสูตรไม่มีวิชาสอบ: ${why}`),
     progs.length > 1 && eitherCount ? `${eitherCount.toLocaleString()} หลักสูตรมีเงื่อนไขขั้นต่ำวิชาใดวิชาหนึ่ง เช่น ต้องมีผลภาษาอังกฤษ — เลือกหลักสูตรเพื่อดู` : "",
   ].filter(Boolean).map(t => `<li>${esc(t)}</li>`).join("");

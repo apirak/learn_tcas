@@ -31,7 +31,13 @@ export function minScoreGroup(conditions: AdmissionRound["score_conditions"]): M
   return keys.length ? { rule, keys, minimum: String(conditions!.score_minimum ?? "").trim() } : null;
 }
 
-const isGrade = (k: string) => /^(credit_)?gpa/.test(k);
+/** รอบ 3 ปีก่อน → เฉพาะหลักสูตรที่รอบ 3 ปีนี้ยังไม่ประกาศสัดส่วนคะแนน (ข้อมูลปีล่าสุดมักยังไม่ครบ) */
+export function lastYearFill(current: ProgramExam[], lastYear: ProgramExam[]): ProgramExam[] {
+  const scored = new Set(current.filter(e => e.round === 3 && e.components.some(c => c.weight > 0)).map(e => e.program_id));
+  return lastYear.filter(e => e.round === 3 && !scored.has(e.program_id));
+}
+
+const isGrade =(k: string) => /^(credit_)?gpa/.test(k);
 
 export function buildProgramExams(rounds: AdmissionRound[], scoreKeys: ScoreKey[]): ProgramExam[] {
   const known = new Set(scoreKeys.map(k => k.key));

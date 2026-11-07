@@ -94,13 +94,14 @@ test("others: non-exam criteria with a real weight, max across rounds; min-score
 });
 
 test("buildBrowse: one row per program_id, no exams = empty exams, gpax-only goes to others, subjects sorted by key", () => {
-  const program = (program_id: string, major: string): Program => ({
+  const program = (program_id: string, major: string, campus = "วิทยาเขตหลัก", faculty = "คณะวิศวกรรมศาสตร์"): Program => ({
     program_id, program_name_th: `หลักสูตร ${program_id}`, program_type_name_th: "ไทย (ปกติ)", university_id: "001",
-    group_field_id: "30", group_field_th: "วิศวกรรมศาสตร์", field_id: "00", field_name_th: "วิศวกรรมทั่วไป", major,
+    group_field_id: "30", group_field_th: "วิศวกรรมศาสตร์", field_id: "00", field_name_th: "วิศวกรรมทั่วไป",
+    campus_name_th: campus, faculty_name_th: faculty, major,
   });
   const universities: University[] = [{ university_id: "001", university_name: "มหาวิทยาลัย ก" }];
   const browse = buildBrowse(
-    [program("P1", "เอก 1"), program("P1", "เอก 2"), program("P2", "")],
+    [program("P1", "เอก 1"), program("P1", "เอก 2", "วิทยาเขตอื่น", "คณะอื่น"), program("P2", "", "วิทยาเขต 2", "คณะ 2")],
     [
       exam("P1", [{ key: "tgat", weight: 50 }, { key: "a_lv_64", weight: 50 }], {}, null, 3),
       exam("P2", [{ key: "gpax", weight: 100 }], {}, { rule: "any", keys: ["ielts", "toeic"], minimum: "5.5 600" }, 2),
@@ -117,8 +118,10 @@ test("buildBrowse: one row per program_id, no exams = empty exams, gpax-only goe
     short: { ielts: "IELTS", toeic: "toeic" },
     programs: [
       { id: "P1", name: "หลักสูตร P1", type: "ไทย (ปกติ)", uni: "001", group: "30", field: "30-00",
+        campus: "วิทยาเขตหลัก", faculty: "คณะวิศวกรรมศาสตร์", // first row of P1 wins
         exams: { tgat1: 50, tgat2: 50, tgat3: 50, a_lv_64: 50 }, others: {}, either: [], rounds: [1, 3], scored: [3] },
-      { id: "P2", name: "หลักสูตร P2", type: "ไทย (ปกติ)", uni: "001", group: "30", field: "30-00", exams: {}, others: { gpax: 100 },
+      { id: "P2", name: "หลักสูตร P2", type: "ไทย (ปกติ)", uni: "001", group: "30", field: "30-00",
+        campus: "วิทยาเขต 2", faculty: "คณะ 2", exams: {}, others: { gpax: 100 },
         either: [["ielts", "toeic"]], rounds: [2], scored: [2] },
     ],
   });

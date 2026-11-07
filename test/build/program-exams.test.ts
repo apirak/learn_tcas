@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import type { AdmissionRound, ScoreKey } from "../../src/shared/types.ts";
-import { buildProgramExams, minScoreGroup, minScores, scoreComponents } from "../../src/build/program-exams.ts";
+import { buildProgramExams, lastYearFill, minScoreGroup, minScores, scoreComponents } from "../../src/build/program-exams.ts";
 
 const key = (k: string): ScoreKey => ({ key: k, label: k, max_value: 100, short_label: k });
 const SCORE_KEYS = ["tgat", "tpat3", "a_lv_61", "a_lv_64", "a_lv_65", "gpax"].map(key);
@@ -58,4 +58,14 @@ test("skips rounds with no exams: no score weights and only GPA minimums", () =>
 
 test("unknown score key throws (the site added a new key)", () => {
   assert.throws(() => buildProgramExams([round({ scores: { new_exam: 50 } })], SCORE_KEYS), /new_exam/);
+});
+
+test("lastYearFill: last year's round 3 only for programs whose round 3 this year has no weights", () => {
+  const [p1, p2, p3] = buildProgramExams([
+    round({ program_id: "P1", scores: { tgat: 100 } }),
+    round({ program_id: "P2", scores: {}, score_conditions: { min_tgat: 30 } }), // minimum only = not announced
+    round({ program_id: "P3", type: "1_2570", round: 1, scores: { tgat: 100 } }),
+  ], SCORE_KEYS);
+  const ly = buildProgramExams(["P1", "P2", "P3", "P4"].map(program_id => round({ program_id, type: "3_2569", scores: { a_lv_61: 100 } })), SCORE_KEYS);
+  assert.deepEqual(lastYearFill([p1, p2, p3], ly).map(e => e.program_id), ["P2", "P3", "P4"]);
 });
