@@ -40,7 +40,7 @@ async function readImport(name: string, skipped: string): Promise<string | null>
 }
 
 /** รอบ 3 ปีก่อน → ProgramExam ที่ใช้เติมหลักสูตรที่ปีนี้ยังไม่ประกาศ; ไม่มีไฟล์ = ไม่เติม */
-async function lastYearExams(current: ProgramExam[], scoreKeys: ScoreKey[]): Promise<ProgramExam[]> {
+async function lastYearExams(current: ProgramExam[], scoreKeys: ScoreKey[], skip: Set<string>): Promise<ProgramExam[]> {
   const text = await readImport(LAST_YEAR_FILE, "ไม่เติมรอบ 3 จากปีก่อน");
   if (text === null) return [];
   const rounds = (JSON.parse(text) as RawAdmissionRound[]).map(r => ({
@@ -48,7 +48,7 @@ async function lastYearExams(current: ProgramExam[], scoreKeys: ScoreKey[]): Pro
     university_id: String(r.university_id).padStart(3, "0"), // ไฟล์นี้เป็นตัวเลข 1 → "001"
     round: Number(r.type.split("_")[0]), // "3_2569" → 3
   }));
-  const fill = lastYearFill(current, buildProgramExams(rounds, scoreKeys));
+  const fill = lastYearFill(current, buildProgramExams(rounds, scoreKeys)).filter(e => !skip.has(e.program_id));
   console.log(`เติมรอบ 3 จากปีก่อน: ${new Set(fill.map(e => e.program_id)).size} หลักสูตร`);
   return fill;
 }
@@ -62,10 +62,10 @@ async function browseWithImports(
   const medicalExams = buildProgramExams(medical.rounds, scoreKeys);
   if (csv !== null) console.log(`กสพท รอบ 3 จาก CSV: ${medical.programs.length} หลักสูตร`);
   const exams = [...programExams, ...medicalExams];
-  // หลักสูตร กสพท มีรอบ 3 ที่มีสัดส่วนแล้ว → lastYearFill ไม่เอาของไฟล์ปีก่อนมาซ้ำ (CSV ชนะ)
+  const medicalIds = new Set(medical.programs.map(p => p.program_id)); // CSV ชนะ ไม่ใช้ไฟล์ปีก่อนกับหลักสูตรเหล่านี้
   return buildBrowse(
     [...programs, ...medical.programs], exams, scoreKeys, universities, [...rounds, ...medical.rounds],
-    await lastYearExams(exams, scoreKeys), medical.programs.map(p => p.program_id),
+    await lastYearExams(exams, scoreKeys, medicalIds), medicalIds,
   );
 }
 

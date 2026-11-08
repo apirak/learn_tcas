@@ -89,14 +89,14 @@ export function buildBrowse(
   universities: University[],
   admissionRounds: AdmissionRound[],
   lastYear: ProgramExam[] = [], // รอบ 3 ปีก่อน ที่ใช้เติม (lastYearFill)
-  lyIds: Iterable<string> = [], // หลักสูตรอื่นที่ใช้ข้อมูลปีก่อน (กสพท จาก CSV — อยู่ใน programExams แล้ว)
+  lastYearIds: Iterable<string> = [], // หลักสูตรอื่นที่ใช้ข้อมูลปีก่อน (กสพท จาก CSV — อยู่ใน programExams แล้ว)
 ): Browse {
   const keyMap = new Map(scoreKeys.map(k => [k.key, k]));
   const all = [...programExams, ...lastYear];
   const weights = examWeightsByProgram(all, keyMap);
   const others = otherWeightsByProgram(all, keyMap);
   const either = eitherByProgram(all, keyMap);
-  const filled = new Set([...lastYear.map(e => e.program_id), ...lyIds]);
+  const filled = new Set([...lastYear.map(e => e.program_id), ...lastYearIds]);
   const rounds = roundsByProgram(admissionRounds, programExams);
   const fieldId = (p: Program) => `${p.group_field_id}-${p.field_id}`;
 

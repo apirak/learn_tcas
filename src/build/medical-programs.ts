@@ -11,6 +11,7 @@ const FIELDS: [prefix: string, group: string, name: string][] = [
 ];
 
 /** CSV (RFC 4180: "" ใน "..." = ") → แถวละ object ตาม header */
+// ponytail: parser เล็ก ๆ ไม่จัดการ BOM — ถ้ารูปแบบไฟล์เปลี่ยนบ่อย ค่อยใช้ lib
 export function parseCsv(text: string): Record<string, string>[] {
   const rows: string[][] = [];
   let row: string[] = [], cell = "", quoted = false;
@@ -42,7 +43,7 @@ export function medicalPrograms(csv: string): { programs: Program[]; rounds: Adm
       program_id: r.program_id,
       program_name_th: r.program_name,
       program_type_name_th: r.program_type_name,
-      university_id: r.university_id,
+      university_id: r.university_id.padStart(3, "0"), // เปิดใน Excel แล้วเซฟ → "31"
       group_field_id: group,
       group_field_th: name,
       field_id: "01",
@@ -52,7 +53,7 @@ export function medicalPrograms(csv: string): { programs: Program[]; rounds: Adm
     });
     rounds.push({
       program_id: r.program_id,
-      university_id: r.university_id,
+      university_id: r.university_id.padStart(3, "0"),
       type: `${r.admission_round}_${r.admission_year}`,
       round: Number(r.admission_round),
       scores: JSON.parse(r.scores), // ข้อความ "null" → null
