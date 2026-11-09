@@ -10,9 +10,10 @@ const FIELDS: [prefix: string, group: string, name: string][] = [
   ["สัตวแพทยศาสตรบัณฑิต", "14", "สัตวแพทยศาสตร์"],
 ];
 
-/** CSV (RFC 4180: "" ใน "..." = ") → แถวละ object ตาม header */
-// ponytail: parser เล็ก ๆ ไม่จัดการ BOM — ถ้ารูปแบบไฟล์เปลี่ยนบ่อย ค่อยใช้ lib
+/** CSV (RFC 4180: "" ใน "..." = ") → แถวละ object ตาม header; ตัด BOM (Excel "CSV UTF-8") และบรรทัดว่าง */
+// ponytail: parser เล็ก ๆ — ถ้ารูปแบบไฟล์เปลี่ยนบ่อย ค่อยใช้ lib
 export function parseCsv(text: string): Record<string, string>[] {
+  if (text.startsWith("﻿")) text = text.slice(1);
   const rows: string[][] = [];
   let row: string[] = [], cell = "", quoted = false;
   for (let i = 0; i < text.length; i++) {
@@ -27,7 +28,7 @@ export function parseCsv(text: string): Record<string, string>[] {
     else if (c !== "\r") cell += c;
   }
   if (cell || row.length) rows.push([...row, cell]);
-  const [header, ...data] = rows;
+  const [header, ...data] = rows.filter(r => r.some(c => c !== ""));
   return data.map(r => Object.fromEntries(header.map((h, i) => [h, r[i]])));
 }
 
@@ -36,8 +37,9 @@ export function medicalPrograms(csv: string): { programs: Program[]; rounds: Adm
   const programs: Program[] = [];
   const rounds: AdmissionRound[] = [];
   for (const r of parseCsv(csv)) {
-    const field = FIELDS.find(([prefix]) => r.program_name.startsWith(prefix));
+    const field = FIELDS.find(([prefix]) => r.program_name?.startsWith(prefix));
     if (!field) throw new Error(`ไม่รู้สาขาของหลักสูตร กสพท: ${r.program_name} (${r.program_id})`);
+    if (!r.scores) throw new Error(`หลักสูตร กสพท ไม่มี scores: ${r.program_name} (${r.program_id})`);
     const [, group, name] = field;
     programs.push({
       program_id: r.program_id,
