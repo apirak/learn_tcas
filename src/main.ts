@@ -9,6 +9,7 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { buildBrowse } from "./build/browse.ts";
+import { medicalPrograms } from "./build/medical-programs.ts";
 import { buildProgramExams, lastYearFill } from "./build/program-exams.ts";
 import { linkScoreKeysToSubjects } from "./build/score-keys-with-subjects.ts";
 import { addRoundsWithData } from "./build/universities-with-rounds.ts";
@@ -19,31 +20,53 @@ import { downloadScoreKeys } from "./download/score-keys.ts";
 import { downloadUniversities, UNIVERSITIES_URL } from "./download/universities.ts";
 import { loadDataFile, saveDataFile } from "./shared/data-files.ts";
 import { BLUEPRINT } from "./shared/mytcas-urls.ts";
-import type { AdmissionRound, Program, ProgramExam, RawAdmissionRound, ScoreKey, University } from "./shared/types.ts";
+import type { AdmissionRound, Browse, Program, ProgramExam, RawAdmissionRound, ScoreKey, University } from "./shared/types.ts";
 
-const BROWSE_SOURCE = "programs.json + admission_rounds.json + program_exams.json + score_keys.json + data_import (รอบ 3 ปีก่อน)";
+const BROWSE_SOURCE = "programs.json + admission_rounds.json + program_exams.json + score_keys.json + data_import (รอบ 3 ปีก่อน + กสพท รอบ 3)";
 
-// รอบ 3 ปีก่อน (ไฟล์ที่ได้มาจากทีม ไม่ได้ดึงจากเว็บ) — ไม่อยู่ใน git เพราะมีคะแนนพยากรณ์ภายใน
-const LAST_YEAR_FILE = new URL("../data_import/cal_TargetSetting_Program_Result.json", import.meta.url);
+// ไฟล์ที่ได้มาจากทีม ไม่ได้ดึงจากเว็บ — ไม่อยู่ใน git เพราะมีคะแนนพยากรณ์ภายใน
+const LAST_YEAR_FILE = "cal_TargetSetting_Program_Result.json"; // รอบ 3 ปีก่อน
+const MEDICAL_FILE = "medical_programs_round3_2569.csv"; // กสพท รอบ 3 ปีก่อน
 
-/** รอบ 3 ปีก่อน → ProgramExam ที่ใช้เติมหลักสูตรที่ปีนี้ยังไม่ประกาศ; ไม่มีไฟล์ = ไม่เติม */
-async function lastYearExams(current: ProgramExam[], scoreKeys: ScoreKey[]): Promise<ProgramExam[]> {
-  let raw: RawAdmissionRound[];
+/** data_import/<name> เป็นข้อความ; ไม่มีไฟล์ = เตือนแล้วคืน null */
+async function readImport(name: string, skipped: string): Promise<string | null> {
   try {
-    raw = JSON.parse(await readFile(LAST_YEAR_FILE, "utf8"));
+    return await readFile(new URL(`../data_import/${name}`, import.meta.url), "utf8");
   } catch (e) {
     if ((e as NodeJS.ErrnoException).code !== "ENOENT") throw e;
-    console.warn("ไม่พบ data_import/cal_TargetSetting_Program_Result.json — ไม่เติมรอบ 3 จากปีก่อน");
-    return [];
+    console.warn(`ไม่พบ data_import/${name} — ${skipped}`);
+    return null;
   }
-  const rounds = raw.map(r => ({
+}
+
+/** รอบ 3 ปีก่อน → ProgramExam ที่ใช้เติมหลักสูตรที่ปีนี้ยังไม่ประกาศ; ไม่มีไฟล์ = ไม่เติม */
+async function lastYearExams(current: ProgramExam[], scoreKeys: ScoreKey[], skip: Set<string>): Promise<ProgramExam[]> {
+  const text = await readImport(LAST_YEAR_FILE, "ไม่เติมรอบ 3 จากปีก่อน");
+  if (text === null) return [];
+  const rounds = (JSON.parse(text) as RawAdmissionRound[]).map(r => ({
     ...r,
     university_id: String(r.university_id).padStart(3, "0"), // ไฟล์นี้เป็นตัวเลข 1 → "001"
     round: Number(r.type.split("_")[0]), // "3_2569" → 3
   }));
-  const fill = lastYearFill(current, buildProgramExams(rounds, scoreKeys));
+  const fill = lastYearFill(current, buildProgramExams(rounds, scoreKeys)).filter(e => !skip.has(e.program_id));
   console.log(`เติมรอบ 3 จากปีก่อน: ${new Set(fill.map(e => e.program_id)).size} หลักสูตร`);
   return fill;
+}
+
+/** browse.json จากข้อมูล mytcas + ไฟล์ใน data_import */
+async function browseWithImports(
+  programs: Program[], programExams: ProgramExam[], scoreKeys: ScoreKey[], universities: University[], rounds: AdmissionRound[],
+): Promise<Browse> {
+  const csv = await readImport(MEDICAL_FILE, "ไม่มีหลักสูตร กสพท");
+  const medical = csv === null ? { programs: [], rounds: [] } : medicalPrograms(csv);
+  const medicalExams = buildProgramExams(medical.rounds, scoreKeys);
+  if (csv !== null) console.log(`กสพท รอบ 3 จาก CSV: ${medical.programs.length} หลักสูตร`);
+  const exams = [...programExams, ...medicalExams];
+  const medicalIds = new Set(medical.programs.map(p => p.program_id)); // CSV ชนะ ไม่ใช้ไฟล์ปีก่อนกับหลักสูตรเหล่านี้
+  return buildBrowse(
+    [...programs, ...medical.programs], exams, scoreKeys, universities, [...rounds, ...medical.rounds],
+    await lastYearExams(exams, scoreKeys, medicalIds), medicalIds,
+  );
 }
 
 async function scrapeAll() {
@@ -74,7 +97,7 @@ async function scrapeAll() {
   const programExams = buildProgramExams(rounds, scoreKeys);
   await saveDataFile("program_exams.json", "admission_rounds.json + score_keys.json", programExams);
 
-  const browse = buildBrowse(programs, programExams, scoreKeys, universities, rounds, await lastYearExams(programExams, scoreKeys));
+  const browse = await browseWithImports(programs, programExams, scoreKeys, universities, rounds);
   await saveDataFile("browse.json", BROWSE_SOURCE, browse, { count: browse.programs.length });
 }
 
@@ -85,14 +108,8 @@ async function rebuildBrowse() {
   const scoreKeys = (await loadDataFile<ScoreKey[]>("score_keys.json")).data;
   const programExams = buildProgramExams(rounds.data, scoreKeys);
   await saveDataFile("program_exams.json", "admission_rounds.json + score_keys.json", programExams, { fetchedAt: rounds.fetched_at });
-  const browse = buildBrowse(
-    programs.data,
-    programExams,
-    scoreKeys,
-    (await loadDataFile<University[]>("universities.json")).data,
-    rounds.data,
-    await lastYearExams(programExams, scoreKeys),
-  );
+  const universities = (await loadDataFile<University[]>("universities.json")).data;
+  const browse = await browseWithImports(programs.data, programExams, scoreKeys, universities, rounds.data);
   await saveDataFile("browse.json", BROWSE_SOURCE, browse, { count: browse.programs.length, fetchedAt: programs.fetched_at });
 }
 
