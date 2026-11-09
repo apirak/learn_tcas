@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import type { ScoreKey } from "../../src/shared/types.ts";
 import { buildBrowse } from "../../src/build/browse.ts";
-import { medicalPrograms } from "../../src/build/medical-programs.ts";
+import { medicalPrograms, parseCsv } from "../../src/build/medical-programs.ts";
 import { buildProgramExams } from "../../src/build/program-exams.ts";
 
 const SCORE_KEYS: ScoreKey[] = ["tpat11", "a_lv_61", "a_lv_64", "a_lv_65", "a_lv_66"]
@@ -25,4 +25,11 @@ test("กสพท CSV → browse row with field from the name, cal_subject_name
   }]);
   assert.deepEqual(browse.fields, { "13-01": "เภสัชศาสตร์" });
   assert.doesNotMatch(JSON.stringify(browse), /12\.3|abc|2026-11-08/); // min_score_last_year, row_hash, adt_ts
+});
+
+test("parseCsv strips an Excel BOM and skips blank lines", () => {
+  assert.deepEqual(parseCsv("﻿program_id,x\r\nP1,a\r\n\r\nP2,b\r\n\r\n"), [
+    { program_id: "P1", x: "a" },
+    { program_id: "P2", x: "b" },
+  ]);
 });
