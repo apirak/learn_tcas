@@ -58,9 +58,9 @@ async function browseWithImports(
   programs: Program[], programExams: ProgramExam[], scoreKeys: ScoreKey[], universities: University[], rounds: AdmissionRound[],
 ): Promise<Browse> {
   const csv = await readImport(MEDICAL_FILE, "ไม่มีหลักสูตร กสพท");
-  const medical = csv === null ? { programs: [], rounds: [] } : medicalPrograms(csv);
+  const medical = csv === null ? { programs: [], rounds: [], unmatched: 0 } : medicalPrograms(csv, universities);
   const medicalExams = buildProgramExams(medical.rounds, scoreKeys);
-  if (csv !== null) console.log(`กสพท รอบ 3 จาก CSV: ${medical.programs.length} หลักสูตร`);
+  if (csv !== null) console.log(`กสพท รอบ 3 จาก CSV: ${medical.programs.length} หลักสูตร (ไม่เจอมหาวิทยาลัย คงไว้ที่ 031: ${medical.unmatched})`);
   const exams = [...programExams, ...medicalExams];
   const medicalIds = new Set(medical.programs.map(p => p.program_id)); // CSV ชนะ ไม่ใช้ไฟล์ปีก่อนกับหลักสูตรเหล่านี้
   return buildBrowse(
